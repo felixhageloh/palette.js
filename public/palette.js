@@ -140,23 +140,225 @@
 })();
 
 require.register("src/bucket", function(exports, require, module) {
-module.exports = function() {
-  var api, b, g, r, total;
+var distance;
+
+distance = require('src/distance');
+
+module.exports = function(centroid) {
+  var api, totals, vectors;
   api = {};
-  r = g = b = total = 0;
-  api.add = function(rgb) {
-    r += rgb[0];
-    b += rgb[1];
-    g += rgb[2];
-    return total++;
+  totals = null;
+  vectors = [];
+  api.add = function(vector) {
+    var i, val, _, _i, _len, _ref;
+    if (totals == null) {
+      totals = (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = vector.length; _i < _len; _i++) {
+          _ = vector[_i];
+          _results.push(0);
+        }
+        return _results;
+      })();
+    }
+    if (vector.length !== totals.length) {
+      throw new Error("dimensions don't match");
+    }
+    for (i = _i = 0, _len = vector.length; _i < _len; i = ++_i) {
+      val = vector[i];
+      totals[i] += val * ((_ref = vector.weight) != null ? _ref : 1);
+    }
+    centroid = null;
+    return vectors.push(vector);
   };
   api.count = function() {
-    return total;
+    return vectors.length;
   };
-  api.meanRgb = function() {
-    return [Math.round(r / total), Math.round(g / total), Math.round(b / total)];
+  api.centroid = function() {
+    var count, dist, mean, smallestDist, total, vector, _i, _len, _ref;
+    if (centroid != null) {
+      return centroid;
+    }
+    if ((count = vectors.length) === 0) {
+      return;
+    }
+    mean = (function() {
+      var _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = totals.length; _i < _len; _i++) {
+        total = totals[_i];
+        _results.push(Math.round(total / count));
+      }
+      return _results;
+    })();
+    centroid = vectors[0];
+    smallestDist = distance(mean, centroid);
+    _ref = vectors.slice(1);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      vector = _ref[_i];
+      if (!((dist = distance(mean, vector)) < smallestDist)) {
+        continue;
+      }
+      centroid = vector;
+      smallestDist = dist;
+    }
+    return centroid;
+  };
+  api.clear = function() {
+    totals = null;
+    vectors.length = 0;
+    return centroid = null;
   };
   return api;
+};
+});
+
+;require.register("src/distance", function(exports, require, module) {
+module.exports = function(a, b) {
+  var deltaSum, dim, i, _i;
+  if ((dim = a.length) !== b.length) {
+    return;
+  }
+  deltaSum = 0;
+  for (i = _i = 0; 0 <= dim ? _i < dim : _i > dim; i = 0 <= dim ? ++_i : --_i) {
+    deltaSum += Math.pow(b[i] - a[i], 2);
+  }
+  return deltaSum;
+};
+});
+
+;require.register("src/find-clusters", function(exports, require, module) {
+var Cluster, bail, centroidsEqual, closestIdx, distance, pickRandom, step, vectorsEqual;
+
+Cluster = require('src/bucket');
+
+distance = require('src/distance');
+
+module.exports = function(vectors, numClusters) {
+  var centroids, clusters, i, numTries, prevClusters;
+  numClusters = Math.min(vectors.length, numClusters);
+  if (vectors.length === numClusters) {
+    return bail(vectors, numClusters);
+  }
+  numTries = 0;
+  centroids = pickRandom(numClusters, vectors);
+  prevClusters = null;
+  while (numTries < 1000 && !centroidsEqual(centroids, prevClusters)) {
+    prevClusters = clusters;
+    clusters = (function() {
+      var _i, _results;
+      _results = [];
+      for (i = _i = 0; 0 <= numClusters ? _i < numClusters : _i > numClusters; i = 0 <= numClusters ? ++_i : --_i) {
+        _results.push(Cluster());
+      }
+      return _results;
+    })();
+    centroids = step(vectors, centroids, clusters);
+    numTries++;
+  }
+  console.log(numTries);
+  return clusters;
+};
+
+step = function(vectors, centroids, clusters) {
+  var cluster, i, vector, _i, _j, _len, _len1, _results;
+  for (_i = 0, _len = vectors.length; _i < _len; _i++) {
+    vector = vectors[_i];
+    cluster = clusters[closestIdx(centroids, vector)];
+    cluster.add(vector);
+  }
+  _results = [];
+  for (i = _j = 0, _len1 = clusters.length; _j < _len1; i = ++_j) {
+    cluster = clusters[i];
+    if (cluster.count() > 0) {
+      _results.push(cluster.centroid());
+    }
+  }
+  return _results;
+};
+
+closestIdx = function(centroids, vector) {
+  var c, closest, dist, idx, smallestDist, _i, _len;
+  closest = 0;
+  smallestDist = null;
+  for (idx = _i = 0, _len = centroids.length; _i < _len; idx = ++_i) {
+    c = centroids[idx];
+    dist = distance(c, vector);
+    if (smallestDist == null) {
+      smallestDist = dist;
+    }
+    if (dist < smallestDist) {
+      closest = idx;
+      smallestDist = dist;
+    }
+  }
+  return closest;
+};
+
+pickRandom = function(n, samples) {
+  var idx, picks, v, _, _i;
+  picks = [];
+  samples = (function() {
+    var _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = samples.length; _i < _len; _i++) {
+      v = samples[_i];
+      _results.push(v);
+    }
+    return _results;
+  })();
+  for (_ = _i = 0; 0 <= n ? _i < n : _i > n; _ = 0 <= n ? ++_i : --_i) {
+    idx = Math.floor(Math.random() * samples.length);
+    picks.push(samples[idx]);
+    samples.splice(idx, 1);
+  }
+  return picks;
+};
+
+centroidsEqual = function(old, clusters) {
+  var centroid, i, _i, _len;
+  if (!clusters) {
+    return false;
+  }
+  for (i = _i = 0, _len = old.length; _i < _len; i = ++_i) {
+    centroid = old[i];
+    if (!vectorsEqual(centroid, clusters[i].centroid())) {
+      return false;
+    }
+  }
+  return true;
+};
+
+vectorsEqual = function(a, b) {
+  var i, val, _i, _len;
+  if ((a && !b) || (b && !a) || (!a && !b)) {
+    return false;
+  }
+  for (i = _i = 0, _len = a.length; _i < _len; i = ++_i) {
+    val = a[i];
+    if (val !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+};
+
+bail = function(vectors, numClusters) {
+  var cluster, clusters, i, _i, _len;
+  clusters = (function() {
+    var _i, _results;
+    _results = [];
+    for (i = _i = 0; 0 <= numClusters ? _i < numClusters : _i > numClusters; i = 0 <= numClusters ? ++_i : --_i) {
+      _results.push(Cluster());
+    }
+    return _results;
+  })();
+  for (i = _i = 0, _len = clusters.length; _i < _len; i = ++_i) {
+    cluster = clusters[i];
+    cluster.add(vectors[i]);
+  }
+  return clusters;
 };
 });
 
@@ -199,57 +401,36 @@ module.exports = function(srcOrImg, callback) {
 });
 
 ;require.register("src/palette", function(exports, require, module) {
-var Bucket, Img, NUM_BUCKETS;
+var Bucket, Img, findClusters;
 
 Bucket = require('src/bucket');
 
 Img = require('src/image');
 
-NUM_BUCKETS = 27;
+findClusters = require('src/find-clusters');
 
 module.exports = function(srcOrImage, numColors, callback) {
-  var buckets, chooseBucket, chunkSize, chunksPerDimension, colorComponentChunk, fillBuckets, run;
-  buckets = [];
-  chunksPerDimension = 0;
-  chunkSize = 1;
+  var run;
   run = function(image) {
-    var b, bucket, i, numBuckets, numSamples, _;
-    chunksPerDimension = Math.round(Math.pow(NUM_BUCKETS, 1 / 3));
-    numBuckets = Math.pow(chunksPerDimension, 3);
-    chunkSize = 255 / chunksPerDimension;
-    buckets = (function() {
-      var _i, _results;
-      _results = [];
-      for (_ = _i = 0; 0 <= numBuckets ? _i <= numBuckets : _i >= numBuckets; _ = 0 <= numBuckets ? ++_i : --_i) {
-        _results.push(Bucket());
+    var bucket, buckets, i, pixels;
+    pixels = [];
+    image.eachPixel(function(p) {
+      if (p) {
+        return pixels.push(p);
       }
-      return _results;
-    })();
-    numSamples = fillBuckets(image);
-    buckets = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = buckets.length; _i < _len; _i++) {
-        b = buckets[_i];
-        if (b.count() > 0) {
-          _results.push(b);
-        }
-      }
-      return _results;
-    })();
+    });
+    buckets = findClusters(pixels, numColors);
     buckets = buckets.sort(function(a, b) {
       return b.count() - a.count();
     });
     return callback({
-      numSamples: numSamples,
+      numSamples: pixels.length,
       colors: (function() {
         var _i, _len, _results;
         _results = [];
         for (i = _i = 0, _len = buckets.length; _i < _len; i = ++_i) {
           bucket = buckets[i];
-          if (i < numColors) {
-            _results.push(bucket.meanRgb());
-          }
+          _results.push(bucket.centroid());
         }
         return _results;
       })(),
@@ -258,46 +439,13 @@ module.exports = function(srcOrImage, numColors, callback) {
         _results = [];
         for (i = _i = 0, _len = buckets.length; _i < _len; i = ++_i) {
           bucket = buckets[i];
-          if (i < numColors) {
-            _results.push(bucket.count());
-          }
+          _results.push(bucket.count());
         }
         return _results;
       })()
     });
   };
-  fillBuckets = function(image) {
-    var count;
-    count = 0;
-    image.eachPixel(function(rgb) {
-      var bucket;
-      if (!(bucket = chooseBucket(rgb))) {
-        return;
-      }
-      bucket.add(rgb);
-      return count++;
-    });
-    return count;
-  };
-  chooseBucket = function(rgb) {
-    var bucketIdx, colorValue, dim, k, _i, _len;
-    bucketIdx = 0;
-    for (dim = _i = 0, _len = rgb.length; _i < _len; dim = ++_i) {
-      colorValue = rgb[dim];
-      k = Math.pow(chunksPerDimension, dim);
-      bucketIdx = bucketIdx + k * colorComponentChunk(colorValue);
-    }
-    return buckets[bucketIdx];
-  };
-  colorComponentChunk = function(colorValue) {
-    var idx;
-    idx = Math.floor(colorValue / chunkSize);
-    if (idx !== 0 && colorValue % chunkSize === 0) {
-      idx--;
-    }
-    return idx;
-  };
-  return Img('test.png', run);
+  return Img(srcOrImage, run);
 };
 });
 

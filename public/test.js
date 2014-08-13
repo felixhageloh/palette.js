@@ -91,7 +91,7 @@
   globals.require.brunch = true;
 })();
 require.register("test/test", function(exports, require, module) {
-var Img, Palette;
+var Img, Palette, i, makePaletteEl, showTestImage, _i;
 
 Img = require("src/image");
 
@@ -112,6 +112,52 @@ Palette('test.png', 3, function(palette) {
   console.log("sampled", palette.numSamples, "pixels");
   return console.log("counts for each color", palette.counts);
 });
+
+makePaletteEl = function(palette) {
+  var c, colorContainer, colorEl, container, countContainer, countEl, i, _i, _len, _ref;
+  container = document.createElement('div');
+  colorContainer = document.createElement('div');
+  countContainer = document.createElement('div');
+  _ref = palette.colors;
+  for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+    c = _ref[i];
+    if (c == null) {
+      c = [];
+    }
+    colorEl = document.createElement('div');
+    colorEl.style.display = 'inline-block';
+    colorEl.style.width = 40 + 'px';
+    colorEl.style.height = 20 + 'px';
+    colorEl.style.backgroundColor = "rgb(" + (c.join(',')) + ")";
+    countEl = document.createElement('div');
+    countEl.style.display = 'inline-block';
+    countEl.style.width = 40 + 'px';
+    countEl.style.height = 20 + 'px';
+    countEl.style.fontSize = 11 + 'px';
+    countEl.style.textAlign = 'center';
+    countEl.innerHTML = palette.counts[i];
+    colorContainer.appendChild(colorEl);
+    countContainer.appendChild(countEl);
+  }
+  container.appendChild(colorContainer);
+  container.appendChild(countContainer);
+  return container;
+};
+
+showTestImage = function(i) {
+  return Palette("" + i + ".jpg", 8, function(palette) {
+    var img;
+    img = new Image();
+    img.src = "" + i + ".jpg";
+    img.style.marginTop = 20 + 'px';
+    document.body.appendChild(img);
+    return document.body.appendChild(makePaletteEl(palette));
+  });
+};
+
+for (i = _i = 1; _i <= 3; i = ++_i) {
+  showTestImage(i);
+}
 });
 
 ;
