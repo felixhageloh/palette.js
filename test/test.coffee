@@ -46,7 +46,7 @@ makePaletteEl = (palette) ->
 
 
 showTestImage = (i) ->
-  Palette "#{i}.jpg", 8, (palette) ->
+  Palette "#{i}.jpg", 5, (palette) ->
     img = new Image()
     img.src = "#{i}.jpg"
     img.style.marginTop = 20+'px'

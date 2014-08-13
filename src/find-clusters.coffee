@@ -1,5 +1,5 @@
-Cluster  = require 'src/cluster'
-distance = require 'src/distance'
+Cluster  = require './cluster'
+distance = require './distance'
 
 # Finds numClusters clusters in vectors (based on geometric distance)
 # Somewhat k-means like, I guess

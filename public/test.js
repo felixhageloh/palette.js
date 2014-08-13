@@ -145,7 +145,7 @@ makePaletteEl = function(palette) {
 };
 
 showTestImage = function(i) {
-  return Palette("" + i + ".jpg", 8, function(palette) {
+  return Palette("" + i + ".jpg", 5, function(palette) {
     var img;
     img = new Image();
     img.src = "" + i + ".jpg";

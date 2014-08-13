@@ -1,5 +1,5 @@
-Img    = require 'src/image'
-findClusters = require 'src/find-clusters'
+Img    = require './image'
+findClusters = require './find-clusters'
 
 module.exports = (srcOrImage, numColors, callback) ->
 

@@ -1,4 +1,4 @@
-distance = require 'src/distance'
+distance = require './distance'
 
 module.exports = (centroid) ->
   api = {}
