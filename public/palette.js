@@ -139,7 +139,7 @@
   connect();
 })();
 
-require.register("src/bucket", function(exports, require, module) {
+require.register("src/cluster", function(exports, require, module) {
 var distance;
 
 distance = require('src/distance');
@@ -229,9 +229,9 @@ module.exports = function(a, b) {
 });
 
 ;require.register("src/find-clusters", function(exports, require, module) {
-var Cluster, bail, centroidsEqual, closestIdx, distance, pickRandom, step, vectorsEqual;
+var Cluster, bail, centroidsEqual, closestIdx, distance, pickEvenly, pickRandom, step, vectorsEqual;
 
-Cluster = require('src/bucket');
+Cluster = require('src/cluster');
 
 distance = require('src/distance');
 
@@ -242,7 +242,7 @@ module.exports = function(vectors, numClusters) {
     return bail(vectors, numClusters);
   }
   numTries = 0;
-  centroids = pickRandom(numClusters, vectors);
+  centroids = pickEvenly(numClusters, 3, 255);
   prevClusters = null;
   while (numTries < 1000 && !centroidsEqual(centroids, prevClusters)) {
     prevClusters = clusters;
@@ -257,7 +257,6 @@ module.exports = function(vectors, numClusters) {
     centroids = step(vectors, centroids, clusters);
     numTries++;
   }
-  console.log(numTries);
   return clusters;
 };
 
@@ -314,6 +313,24 @@ pickRandom = function(n, samples) {
     samples.splice(idx, 1);
   }
   return picks;
+};
+
+pickEvenly = function(n, dimensions, range) {
+  var chunk, dim, i, s, vectors, _i;
+  chunk = range / n;
+  vectors = [];
+  for (i = _i = 0; 0 <= n ? _i < n : _i > n; i = 0 <= n ? ++_i : --_i) {
+    s = Math.round(chunk * i + chunk / 2);
+    vectors.push((function() {
+      var _j, _results;
+      _results = [];
+      for (dim = _j = 0; 0 <= dimensions ? _j < dimensions : _j > dimensions; dim = 0 <= dimensions ? ++_j : --_j) {
+        _results.push(s);
+      }
+      return _results;
+    })());
+  }
+  return vectors;
 };
 
 centroidsEqual = function(old, clusters) {
@@ -401,9 +418,7 @@ module.exports = function(srcOrImg, callback) {
 });
 
 ;require.register("src/palette", function(exports, require, module) {
-var Bucket, Img, findClusters;
-
-Bucket = require('src/bucket');
+var Img, findClusters;
 
 Img = require('src/image');
 
@@ -412,15 +427,15 @@ findClusters = require('src/find-clusters');
 module.exports = function(srcOrImage, numColors, callback) {
   var run;
   run = function(image) {
-    var bucket, buckets, i, pixels;
+    var cluster, clusters, i, pixels;
     pixels = [];
     image.eachPixel(function(p) {
       if (p) {
         return pixels.push(p);
       }
     });
-    buckets = findClusters(pixels, numColors);
-    buckets = buckets.sort(function(a, b) {
+    clusters = findClusters(pixels, numColors);
+    clusters = clusters.sort(function(a, b) {
       return b.count() - a.count();
     });
     return callback({
@@ -428,18 +443,18 @@ module.exports = function(srcOrImage, numColors, callback) {
       colors: (function() {
         var _i, _len, _results;
         _results = [];
-        for (i = _i = 0, _len = buckets.length; _i < _len; i = ++_i) {
-          bucket = buckets[i];
-          _results.push(bucket.centroid());
+        for (i = _i = 0, _len = clusters.length; _i < _len; i = ++_i) {
+          cluster = clusters[i];
+          _results.push(cluster.centroid());
         }
         return _results;
       })(),
       counts: (function() {
         var _i, _len, _results;
         _results = [];
-        for (i = _i = 0, _len = buckets.length; _i < _len; i = ++_i) {
-          bucket = buckets[i];
-          _results.push(bucket.count());
+        for (i = _i = 0, _len = clusters.length; _i < _len; i = ++_i) {
+          cluster = clusters[i];
+          _results.push(cluster.count());
         }
         return _results;
       })()

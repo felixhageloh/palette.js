@@ -1,4 +1,3 @@
-Bucket = require 'src/bucket'
 Img    = require 'src/image'
 findClusters = require 'src/find-clusters'
 
@@ -8,13 +7,13 @@ module.exports = (srcOrImage, numColors, callback) ->
     pixels = []
     image.eachPixel (p) -> pixels.push(p) if p
 
-    buckets = findClusters pixels, numColors
-    buckets = buckets.sort (a,b) -> b.count() - a.count()
+    clusters = findClusters pixels, numColors
+    clusters = clusters.sort (a,b) -> b.count() - a.count()
 
     callback {
       numSamples: pixels.length
-      colors    : (bucket.centroid() for bucket, i in buckets)
-      counts    : (bucket.count()    for bucket, i in buckets)
+      colors    : (cluster.centroid() for cluster, i in clusters)
+      counts    : (cluster.count()    for cluster, i in clusters)
     }
 
   Img srcOrImage, run

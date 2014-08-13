@@ -1,4 +1,4 @@
-Cluster  = require 'src/bucket'
+Cluster  = require 'src/cluster'
 distance = require 'src/distance'
 
 # Finds numClusters clusters in vectors (based on geometric distance)
@@ -9,7 +9,7 @@ module.exports = (vectors, numClusters) ->
   return bail(vectors, numClusters) if vectors.length == numClusters
 
   numTries  = 0
-  centroids = pickRandom(numClusters, vectors)
+  centroids = pickEvenly(numClusters, 3, 255)     #pickRandom(numClusters, vectors)
   prevClusters = null
 
   while numTries < 1000 and !centroidsEqual(centroids, prevClusters)
@@ -18,7 +18,6 @@ module.exports = (vectors, numClusters) ->
     centroids = step(vectors, centroids, clusters)
     numTries++
 
-  console.log numTries
   clusters
 
 step = (vectors, centroids, clusters) ->
@@ -50,6 +49,17 @@ pickRandom = (n, samples) ->
     picks.push(samples[idx])
     samples.splice(idx, 1)
   picks
+
+pickEvenly = (n, dimensions, range) ->
+  chunk = range / n
+  vectors = []
+
+  for i in [0...n]
+    s = Math.round chunk * i + chunk/2
+    vectors.push (s for dim in [0...dimensions])
+
+  vectors
+
 
 centroidsEqual = (old, clusters) ->
   return false unless clusters
