@@ -90,11 +90,13 @@ module.exports = function(a, b) {
 
 
 },{}],3:[function(require,module,exports){
-var Cluster, bail, centroidsEqual, closestIdx, distance, pickEvenly, pickRandom, step, vectorsEqual;
+var Cluster, MAX_TRIES, bail, centroidsEqual, closestIdx, distance, pickEvenly, pickRandom, step, vectorsEqual;
 
 Cluster = require('./cluster');
 
 distance = require('./distance');
+
+MAX_TRIES = 100;
 
 module.exports = function(vectors, numClusters) {
   var centroids, clusters, i, numTries, prevClusters;
@@ -105,7 +107,7 @@ module.exports = function(vectors, numClusters) {
   numTries = 0;
   centroids = pickEvenly(numClusters, 3, 255);
   prevClusters = null;
-  while (numTries < 1000 && !centroidsEqual(centroids, prevClusters)) {
+  while (numTries < MAX_TRIES && !centroidsEqual(centroids, prevClusters)) {
     prevClusters = clusters;
     clusters = (function() {
       var _i, _results;
@@ -242,14 +244,7 @@ bail = function(vectors, numClusters) {
 
 
 },{"./cluster":1,"./distance":2}],4:[function(require,module,exports){
-var getImageData;
-
-getImageData = function(image) {
-  var ctx;
-  ctx = document.createElement("canvas").getContext('2d');
-  ctx.drawImage(image, 0, 0);
-  return ctx.getImageData(0, 0, image.width, image.height).data;
-};
+var MAX_PIXELS, getImageData;
 
 module.exports = function(srcOrImg, callback) {
   var api, image, init;
@@ -263,19 +258,35 @@ module.exports = function(srcOrImg, callback) {
     image.src = srcOrImg.src ? srcOrImg.src : srcOrImg || '';
   };
   api.eachPixel = function(callback) {
-    var data, getRgb, i, length, _i, _ref, _results;
+    var data, getRgb, i, length, _i, _results;
     data = getImageData(image);
     length = data.length || image.width * image.height;
     getRgb = function(pixelIdx) {
       return Array.prototype.slice.apply(data, [pixelIdx, pixelIdx + 3]);
     };
     _results = [];
-    for (i = _i = 0, _ref = length - 1; _i <= _ref; i = _i += 4) {
+    for (i = _i = 0; _i < length; i = _i += 4) {
       _results.push(callback(getRgb(i)));
     }
     return _results;
   };
   return init();
+};
+
+MAX_PIXELS = 10000;
+
+getImageData = function(image) {
+  var aspect, canvas, ctx, height, width, _ref;
+  aspect = image.width / image.height;
+  height = Math.sqrt(MAX_PIXELS / aspect);
+  width = height * aspect;
+  _ref = [Math.round(width), Math.round(height)], width = _ref[0], height = _ref[1];
+  canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0);
+  return ctx.getImageData(0, 0, width, height).data;
 };
 
 
