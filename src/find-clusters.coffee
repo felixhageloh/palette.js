@@ -1,6 +1,8 @@
 Cluster  = require './cluster'
 distance = require './distance'
 
+MAX_TRIES = 100
+
 # Finds numClusters clusters in vectors (based on geometric distance)
 # Somewhat k-means like, I guess
 module.exports = (vectors, numClusters) ->
@@ -12,7 +14,7 @@ module.exports = (vectors, numClusters) ->
   centroids = pickEvenly(numClusters, 3, 255)     #pickRandom(numClusters, vectors)
   prevClusters = null
 
-  while numTries < 1000 and !centroidsEqual(centroids, prevClusters)
+  while numTries < MAX_TRIES and !centroidsEqual(centroids, prevClusters)
     prevClusters = clusters
     clusters  = (Cluster() for i in [0...numClusters])
     centroids = step(vectors, centroids, clusters)
