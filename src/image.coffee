@@ -1,9 +1,3 @@
-getImageData = (image) ->
-  ctx = document.createElement("canvas").getContext('2d')
-  ctx.drawImage(image, 0, 0)
-  ctx.getImageData(0, 0, image.width, image.height).data
-
-
 module.exports = (srcOrImg, callback) ->
   api = {}
 
@@ -22,6 +16,25 @@ module.exports = (srcOrImg, callback) ->
     getRgb = (pixelIdx)  ->
       Array::slice.apply(data, [pixelIdx, pixelIdx+3])
 
-    callback getRgb(i) for i in [0..length-1] by 4
+    callback getRgb(i) for i in [0...length] by 4
 
   init()
+
+MAX_PIXELS = 10000
+
+getImageData = (image) ->
+  aspect = image.width / image.height
+
+  height = Math.sqrt MAX_PIXELS/aspect
+  width  = height * aspect
+
+  [width, height] = [Math.round(width), Math.round(height)]
+  #[width, height] = [image.width, image.height]
+
+  canvas = document.createElement("canvas")
+  canvas.width  = width
+  canvas.height = height
+
+  ctx = canvas.getContext('2d')
+  ctx.drawImage(image, 0, 0)
+  ctx.getImageData(0, 0, width, height).data
