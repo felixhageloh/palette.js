@@ -1,34 +1,63 @@
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.palette=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var distance;
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.palette = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var ImageData, findClusters, toRgbVectors;
 
-distance = require('./distance');
+ImageData = require('./src/image-data');
 
-module.exports = function(centroid) {
-  var api, totals, vectors;
-  api = {};
-  totals = null;
-  vectors = [];
-  api.add = function(vector) {
-    var i, val, _, _i, _len, _ref;
-    if (totals == null) {
-      totals = (function() {
+toRgbVectors = require('./src/to-rgb-vectors');
+
+findClusters = require('./src/find-clusters');
+
+module.exports = function(srcOrImage, numColors, callback) {
+  return ImageData(srcOrImage).then(function(data) {
+    var cluster, clusters, vectors;
+    vectors = toRgbVectors(data);
+    clusters = findClusters(vectors, numColors);
+    clusters = clusters.sort(function(a, b) {
+      return b.count() - a.count();
+    });
+    return callback({
+      numSamples: vectors.length,
+      colors: (function() {
         var _i, _len, _results;
         _results = [];
-        for (_i = 0, _len = vector.length; _i < _len; _i++) {
-          _ = vector[_i];
-          _results.push(0);
+        for (_i = 0, _len = clusters.length; _i < _len; _i++) {
+          cluster = clusters[_i];
+          _results.push(cluster.centroid());
         }
         return _results;
-      })();
-    }
-    if (vector.length !== totals.length) {
-      throw new Error("dimensions don't match");
-    }
+      })(),
+      counts: (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = clusters.length; _i < _len; _i++) {
+          cluster = clusters[_i];
+          _results.push(cluster.count());
+        }
+        return _results;
+      })()
+    });
+  });
+};
+
+
+},{"./src/find-clusters":3,"./src/image-data":4,"./src/to-rgb-vectors":6}],2:[function(require,module,exports){
+var distance;
+
+distance = require('./square-distance');
+
+module.exports = function() {
+  var api, centroid, lastNumVectors, totals, vectors;
+  api = {};
+  totals = [0, 0, 0];
+  vectors = [];
+  centroid = null;
+  lastNumVectors = null;
+  api.add = function(vector) {
+    var i, val, _i, _len;
     for (i = _i = 0, _len = vector.length; _i < _len; i = ++_i) {
       val = vector[i];
-      totals[i] += val * ((_ref = vector.weight) != null ? _ref : 1);
+      totals[i] += val;
     }
-    centroid = null;
     return vectors.push(vector);
   };
   api.count = function() {
@@ -36,7 +65,7 @@ module.exports = function(centroid) {
   };
   api.centroid = function() {
     var count, dist, mean, smallestDist, total, vector, _i, _len, _ref;
-    if (centroid != null) {
+    if ((centroid != null) && lastNumVectors === vectors.length) {
       return centroid;
     }
     if ((count = vectors.length) === 0) {
@@ -52,6 +81,7 @@ module.exports = function(centroid) {
       return _results;
     })();
     centroid = vectors[0];
+    lastNumVectors = vectors.length;
     smallestDist = distance(mean, centroid);
     _ref = vectors.slice(1);
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -67,34 +97,19 @@ module.exports = function(centroid) {
   api.clear = function() {
     totals = null;
     vectors.length = 0;
-    return centroid = null;
+    centroid = null;
+    return lastNumVectors = null;
   };
   return api;
 };
 
 
-
-},{"./distance":2}],2:[function(require,module,exports){
-module.exports = function(a, b) {
-  var deltaSum, dim, i, _i;
-  if ((dim = a.length) !== b.length) {
-    return;
-  }
-  deltaSum = 0;
-  for (i = _i = 0; 0 <= dim ? _i < dim : _i > dim; i = 0 <= dim ? ++_i : --_i) {
-    deltaSum += Math.pow(b[i] - a[i], 2);
-  }
-  return deltaSum;
-};
-
-
-
-},{}],3:[function(require,module,exports){
-var Cluster, MAX_TRIES, bail, centroidsEqual, closestIdx, distance, pickEvenly, pickRandom, step, vectorsEqual;
+},{"./square-distance":5}],3:[function(require,module,exports){
+var Cluster, MAX_TRIES, bail, centroidsEqual, closestClusterIdx, distance, pickEvenly, pickRandom, step, vectorsEqual;
 
 Cluster = require('./cluster');
 
-distance = require('./distance');
+distance = require('./square-distance');
 
 MAX_TRIES = 100;
 
@@ -127,7 +142,7 @@ step = function(vectors, centroids, clusters) {
   var cluster, i, vector, _i, _j, _len, _len1, _results;
   for (_i = 0, _len = vectors.length; _i < _len; _i++) {
     vector = vectors[_i];
-    cluster = clusters[closestIdx(centroids, vector)];
+    cluster = clusters[closestClusterIdx(centroids, vector)];
     cluster.add(vector);
   }
   _results = [];
@@ -140,16 +155,13 @@ step = function(vectors, centroids, clusters) {
   return _results;
 };
 
-closestIdx = function(centroids, vector) {
+closestClusterIdx = function(centroids, vector) {
   var c, closest, dist, idx, smallestDist, _i, _len;
   closest = 0;
-  smallestDist = null;
+  smallestDist = 195076;
   for (idx = _i = 0, _len = centroids.length; _i < _len; idx = ++_i) {
     c = centroids[idx];
     dist = distance(c, vector);
-    if (smallestDist == null) {
-      smallestDist = dist;
-    }
     if (dist < smallestDist) {
       closest = idx;
       smallestDist = dist;
@@ -236,46 +248,29 @@ bail = function(vectors, numClusters) {
   })();
   for (i = _i = 0, _len = clusters.length; _i < _len; i = ++_i) {
     cluster = clusters[i];
-    cluster.add(vectors[i]);
+    cluster.add(vectors.at(i));
   }
   return clusters;
 };
 
 
-
-},{"./cluster":1,"./distance":2}],4:[function(require,module,exports){
-var MAX_PIXELS, getImageData;
-
-module.exports = function(srcOrImg, callback) {
-  var api, image, init;
-  api = {};
-  image = null;
-  init = function() {
-    image = new Image();
-    image.onload = function() {
-      return callback(api);
-    };
-    image.src = srcOrImg.src ? srcOrImg.src : srcOrImg || '';
-  };
-  api.eachPixel = function(callback) {
-    var data, getRgb, i, length, _i, _results;
-    data = getImageData(image);
-    length = data.length || image.width * image.height;
-    getRgb = function(pixelIdx) {
-      return Array.prototype.slice.apply(data, [pixelIdx, pixelIdx + 3]);
-    };
-    _results = [];
-    for (i = _i = 0; _i < length; i = _i += 4) {
-      _results.push(callback(getRgb(i)));
-    }
-    return _results;
-  };
-  return init();
-};
+},{"./cluster":2,"./square-distance":5}],4:[function(require,module,exports){
+var MAX_PIXELS, pixelData;
 
 MAX_PIXELS = 10000;
 
-getImageData = function(image) {
+module.exports = function(srcOrImg) {
+  return new Promise(function(accept, reject) {
+    var image;
+    image = new Image();
+    image.onload = function() {
+      return accept(pixelData(image));
+    };
+    return image.src = srcOrImg.src ? srcOrImg.src : srcOrImg || '';
+  });
+};
+
+pixelData = function(image) {
   var aspect, canvas, ctx, height, width, _ref;
   aspect = image.width / image.height;
   height = Math.sqrt(MAX_PIXELS / aspect);
@@ -290,54 +285,33 @@ getImageData = function(image) {
 };
 
 
-
 },{}],5:[function(require,module,exports){
-var Img, findClusters;
+// Calculates the square distance of two vectors (presented as arrays).
+module.exports = function squareDistance(a, b) {
+  var deltaSum = 0;
+  var dim = a.length;
 
-Img = require('./image');
+  for(var i = 0; i < dim; i++)
+    deltaSum = deltaSum + Math.pow((b[i] - a[i]), 2);
 
-findClusters = require('./find-clusters');
-
-module.exports = function(srcOrImage, numColors, callback) {
-  var run;
-  run = function(image) {
-    var cluster, clusters, i, pixels;
-    pixels = [];
-    image.eachPixel(function(p) {
-      if (p) {
-        return pixels.push(p);
-      }
-    });
-    clusters = findClusters(pixels, numColors);
-    clusters = clusters.sort(function(a, b) {
-      return b.count() - a.count();
-    });
-    return callback({
-      numSamples: pixels.length,
-      colors: (function() {
-        var _i, _len, _results;
-        _results = [];
-        for (i = _i = 0, _len = clusters.length; _i < _len; i = ++_i) {
-          cluster = clusters[i];
-          _results.push(cluster.centroid());
-        }
-        return _results;
-      })(),
-      counts: (function() {
-        var _i, _len, _results;
-        _results = [];
-        for (i = _i = 0, _len = clusters.length; _i < _len; i = ++_i) {
-          cluster = clusters[i];
-          _results.push(cluster.count());
-        }
-        return _results;
-      })()
-    });
-  };
-  return Img(srcOrImage, run);
+  return deltaSum;
 };
 
+},{}],6:[function(require,module,exports){
+module.exports = function toRgbArray(imageData) {
+  var rgbVectors = [];
+  var numPixels = imageData.length / 4;
+  var offset;
 
+  for (var i = 0; i < numPixels; i++) {
+    offset = i * 4;
+    rgbVectors.push(
+      Array.prototype.slice.apply(imageData, [offset, offset+3])
+    );
+  }
 
-},{"./find-clusters":3,"./image":4}]},{},[5])(5)
+  return rgbVectors;
+};
+
+},{}]},{},[1])(1)
 });

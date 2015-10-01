@@ -1,145 +1,46 @@
-(function(/*! Brunch !*/) {
-  'use strict';
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.palette=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"/Users/felix/Workspace/palette.js/index.coffee":[function(require,module,exports){
+var ImageData, findClusters, toRgb;
 
-  var globals = typeof window !== 'undefined' ? window : global;
-  if (typeof globals.require === 'function') return;
+ImageData = require('./src/image-data');
 
-  var modules = {};
-  var cache = {};
+toRgb = require('./src/to-rgb');
 
-  var has = function(object, name) {
-    return ({}).hasOwnProperty.call(object, name);
-  };
+findClusters = require('./src/find-clusters');
 
-  var expand = function(root, name) {
-    var results = [], parts, part;
-    if (/^\.\.?(\/|$)/.test(name)) {
-      parts = [root, name].join('/').split('/');
-    } else {
-      parts = name.split('/');
-    }
-    for (var i = 0, length = parts.length; i < length; i++) {
-      part = parts[i];
-      if (part === '..') {
-        results.pop();
-      } else if (part !== '.' && part !== '') {
-        results.push(part);
-      }
-    }
-    return results.join('/');
-  };
-
-  var dirname = function(path) {
-    return path.split('/').slice(0, -1).join('/');
-  };
-
-  var localRequire = function(path) {
-    return function(name) {
-      var dir = dirname(path);
-      var absolute = expand(dir, name);
-      return globals.require(absolute, path);
-    };
-  };
-
-  var initModule = function(name, definition) {
-    var module = {id: name, exports: {}};
-    cache[name] = module;
-    definition(module.exports, localRequire(name), module);
-    return module.exports;
-  };
-
-  var require = function(name, loaderPath) {
-    var path = expand(name, '.');
-    if (loaderPath == null) loaderPath = '/';
-
-    if (has(cache, path)) return cache[path].exports;
-    if (has(modules, path)) return initModule(path, modules[path]);
-
-    var dirIndex = expand(path, './index');
-    if (has(cache, dirIndex)) return cache[dirIndex].exports;
-    if (has(modules, dirIndex)) return initModule(dirIndex, modules[dirIndex]);
-
-    throw new Error('Cannot find module "' + name + '" from '+ '"' + loaderPath + '"');
-  };
-
-  var define = function(bundle, fn) {
-    if (typeof bundle === 'object') {
-      for (var key in bundle) {
-        if (has(bundle, key)) {
-          modules[key] = bundle[key];
+module.exports = function(srcOrImage, numColors, callback) {
+  return ImageData(srcOrImage).then(function(data) {
+    var cluster, clusters;
+    clusters = findClusters(toRgb(data), numColors);
+    clusters = clusters.sort(function(a, b) {
+      return b.count() - a.count();
+    });
+    return callback({
+      numSamples: pixels.length,
+      colors: (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = clusters.length; _i < _len; _i++) {
+          cluster = clusters[_i];
+          _results.push(cluster.centroid());
         }
-      }
-    } else {
-      modules[bundle] = fn;
-    }
-  };
+        return _results;
+      })(),
+      counts: (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = clusters.length; _i < _len; _i++) {
+          cluster = clusters[_i];
+          _results.push(cluster.count());
+        }
+        return _results;
+      })()
+    });
+  });
+};
 
-  var list = function() {
-    var result = [];
-    for (var item in modules) {
-      if (has(modules, item)) {
-        result.push(item);
-      }
-    }
-    return result;
-  };
 
-  globals.require = require;
-  globals.require.define = define;
-  globals.require.register = define;
-  globals.require.list = list;
-  globals.require.brunch = true;
-})();
-(function() {
-  var WebSocket = window.WebSocket || window.MozWebSocket;
-  var br = window.brunch = (window.brunch || {});
-  var ar = br['auto-reload'] = (br['auto-reload'] || {});
-  if (!WebSocket || ar.disabled) return;
 
-  var cacheBuster = function(url){
-    var date = Math.round(Date.now() / 1000).toString();
-    url = url.replace(/(\&|\\?)cacheBuster=\d*/, '');
-    return url + (url.indexOf('?') >= 0 ? '&' : '?') +'cacheBuster=' + date;
-  };
-
-  var reloaders = {
-    page: function(){
-      window.location.reload(true);
-    },
-
-    stylesheet: function(){
-      [].slice
-        .call(document.querySelectorAll('link[rel="stylesheet"]'))
-        .filter(function(link){
-          return (link != null && link.href != null);
-        })
-        .forEach(function(link) {
-          link.href = cacheBuster(link.href);
-        });
-    }
-  };
-  var port = ar.port || 9485;
-  var host = br.server || window.location.hostname;
-
-  var connect = function(){
-    var connection = new WebSocket('ws://' + host + ':' + port);
-    connection.onmessage = function(event){
-      if (ar.disabled) return;
-      var message = event.data;
-      var reloader = reloaders[message] || reloaders.page;
-      reloader();
-    };
-    connection.onerror = function(){
-      if (connection.readyState) connection.close();
-    };
-    connection.onclose = function(){
-      window.setTimeout(connect, 1000);
-    };
-  };
-  connect();
-})();
-
-require.register("src/cluster", function(exports, require, module) {
+},{"./src/find-clusters":"/Users/felix/Workspace/palette.js/src/find-clusters.coffee","./src/image-data":"/Users/felix/Workspace/palette.js/src/image-data.coffee","./src/to-rgb":"/Users/felix/Workspace/palette.js/src/to-rgb.coffee"}],"/Users/felix/Workspace/palette.js/src/cluster.coffee":[function(require,module,exports){
 var distance;
 
 distance = require('./distance');
@@ -212,9 +113,10 @@ module.exports = function(centroid) {
   };
   return api;
 };
-});
 
-;require.register("src/distance", function(exports, require, module) {
+
+
+},{"./distance":"/Users/felix/Workspace/palette.js/src/distance.coffee"}],"/Users/felix/Workspace/palette.js/src/distance.coffee":[function(require,module,exports){
 module.exports = function(a, b) {
   var deltaSum, dim, i, _i;
   if ((dim = a.length) !== b.length) {
@@ -226,9 +128,10 @@ module.exports = function(a, b) {
   }
   return deltaSum;
 };
-});
 
-;require.register("src/find-clusters", function(exports, require, module) {
+
+
+},{}],"/Users/felix/Workspace/palette.js/src/find-clusters.coffee":[function(require,module,exports){
 var Cluster, MAX_TRIES, bail, centroidsEqual, closestIdx, distance, pickEvenly, pickRandom, step, vectorsEqual;
 
 Cluster = require('./cluster');
@@ -379,41 +282,26 @@ bail = function(vectors, numClusters) {
   }
   return clusters;
 };
-});
 
-;require.register("src/image", function(exports, require, module) {
-var MAX_PIXELS, getImageData;
 
-module.exports = function(srcOrImg, callback) {
-  var api, image, init;
-  api = {};
-  image = null;
-  init = function() {
-    image = new Image();
-    image.onload = function() {
-      return callback(api);
-    };
-    image.src = srcOrImg.src ? srcOrImg.src : srcOrImg || '';
-  };
-  api.eachPixel = function(callback) {
-    var data, getRgb, i, length, _i, _results;
-    data = getImageData(image);
-    length = data.length || image.width * image.height;
-    getRgb = function(pixelIdx) {
-      return Array.prototype.slice.apply(data, [pixelIdx, pixelIdx + 3]);
-    };
-    _results = [];
-    for (i = _i = 0; _i < length; i = _i += 4) {
-      _results.push(callback(getRgb(i)));
-    }
-    return _results;
-  };
-  return init();
-};
+
+},{"./cluster":"/Users/felix/Workspace/palette.js/src/cluster.coffee","./distance":"/Users/felix/Workspace/palette.js/src/distance.coffee"}],"/Users/felix/Workspace/palette.js/src/image-data.coffee":[function(require,module,exports){
+var MAX_PIXELS, pixelData;
 
 MAX_PIXELS = 10000;
 
-getImageData = function(image) {
+module.exports = function(srcOrImg) {
+  return new Promise(function(accept, reject) {
+    var image;
+    image = new Image();
+    image.onload = function() {
+      return accept(pixelData(image));
+    };
+    return image.src = srcOrImg.src ? srcOrImg.src : srcOrImg || '';
+  });
+};
+
+pixelData = function(image) {
   var aspect, canvas, ctx, height, width, _ref;
   aspect = image.width / image.height;
   height = Math.sqrt(MAX_PIXELS / aspect);
@@ -426,54 +314,28 @@ getImageData = function(image) {
   ctx.drawImage(image, 0, 0);
   return ctx.getImageData(0, 0, width, height).data;
 };
-});
 
-;require.register("src/palette", function(exports, require, module) {
-var Img, findClusters;
 
-Img = require('./image');
 
-findClusters = require('./find-clusters');
-
-module.exports = function(srcOrImage, numColors, callback) {
-  var run;
-  run = function(image) {
-    var cluster, clusters, i, pixels;
-    pixels = [];
-    image.eachPixel(function(p) {
-      if (p) {
-        return pixels.push(p);
-      }
-    });
-    clusters = findClusters(pixels, numColors);
-    clusters = clusters.sort(function(a, b) {
-      return b.count() - a.count();
-    });
-    return callback({
-      numSamples: pixels.length,
-      colors: (function() {
-        var _i, _len, _results;
-        _results = [];
-        for (i = _i = 0, _len = clusters.length; _i < _len; i = ++_i) {
-          cluster = clusters[i];
-          _results.push(cluster.centroid());
-        }
-        return _results;
-      })(),
-      counts: (function() {
-        var _i, _len, _results;
-        _results = [];
-        for (i = _i = 0, _len = clusters.length; _i < _len; i = ++_i) {
-          cluster = clusters[i];
-          _results.push(cluster.count());
-        }
-        return _results;
-      })()
-    });
+},{}],"/Users/felix/Workspace/palette.js/src/to-rgb.coffee":[function(require,module,exports){
+module.exports = function(imageData) {
+  var api, getRgb, i, length;
+  api = {};
+  length = imageData.length || image.width * image.height;
+  getRgb = function(pixelIdx) {
+    return Array.prototype.slice.apply(imageData, [pixelIdx, pixelIdx + 3]);
   };
-  return Img(srcOrImage, run);
+  return (function() {
+    var _i, _results;
+    _results = [];
+    for (i = _i = 0; _i < length; i = _i += 4) {
+      _results.push(cb(getRgb(i)));
+    }
+    return _results;
+  })();
 };
-});
 
-;
-//# sourceMappingURL=palette.js.map
+
+
+},{}]},{},["/Users/felix/Workspace/palette.js/index.coffee"])("/Users/felix/Workspace/palette.js/index.coffee")
+});

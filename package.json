@@ -4,7 +4,9 @@
   "description": "Extract color palettes from images.",
   "main": "index.js",
   "scripts": {
-    "build": "browserify -s palette -t coffeeify --extension .coffee src/palette.coffee > palette.js"
+    "start": "watchify -d -v -t coffeeify --extension .coffee test/test.coffee -o public/test.js",
+    "build": "browserify -s palette -t coffeeify --extension .coffee index.coffee > palette.js",
+    "test": "browserify -t coffeeify -t brfs test/*.js | node_modules/testling/bin/cmd.js"
   },
   "repository": {
     "type": "git",
@@ -18,7 +20,10 @@
   "homepage": "https://github.com/felixhageloh/palette.js",
   "devDependencies": {
     "auto-reload-brunch": "^1.7.3",
+    "brfs": "^1.4.1",
     "coffee-script-brunch": "^1.8.0",
-    "coffeeify": "^0.7.0"
+    "coffeeify": "^0.7.0",
+    "tape": "^4.2.0",
+    "testling": "^1.7.1"
   }
 }

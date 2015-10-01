@@ -1,35 +1,32 @@
-distance = require './distance'
+distance = require './square-distance'
 
-module.exports = (centroid) ->
+module.exports = ->
   api = {}
 
-  totals   = null # keep a running total
-  vectors  = []
+  totals = [0, 0, 0]
+  vectors = []
+  centroid = null
+  lastNumVectors = null
 
   api.add = (vector) ->
-    totals ?= (0 for _ in vector)
-    throw new Error("dimensions don't match") unless vector.length == totals.length
-
-    for val, i in vector
-      totals[i] += val * (vector.weight ? 1)
-
-    centroid = null
+    totals[i] += val for val, i in vector
     vectors.push vector
 
   api.count = ->
     vectors.length
 
   api.centroid = ->
-    return centroid if centroid?
+    return centroid if centroid? and lastNumVectors == vectors.length
     return if (count = vectors.length) == 0
     mean = (Math.round(total/count) for total in totals)
 
-    centroid     = vectors[0]
+    centroid = vectors[0]
+    lastNumVectors = vectors.length
     smallestDist = distance(mean, centroid)
 
     for vector in vectors[1..]
       continue unless (dist = distance(mean, vector)) < smallestDist
-      centroid     = vector
+      centroid = vector
       smallestDist = dist
 
     centroid
@@ -38,5 +35,6 @@ module.exports = (centroid) ->
     totals = null
     vectors.length = 0
     centroid = null
+    lastNumVectors = null
 
   api

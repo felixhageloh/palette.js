@@ -1,5 +1,5 @@
 Cluster  = require './cluster'
-distance = require './distance'
+distance = require './square-distance'
 
 MAX_TRIES = 100
 
@@ -7,11 +7,10 @@ MAX_TRIES = 100
 # Somewhat k-means like, I guess
 module.exports = (vectors, numClusters) ->
   numClusters = Math.min vectors.length, numClusters
-
   return bail(vectors, numClusters) if vectors.length == numClusters
 
   numTries  = 0
-  centroids = pickEvenly(numClusters, 3, 255)     #pickRandom(numClusters, vectors)
+  centroids = pickEvenly(numClusters, 3, 255)
   prevClusters = null
 
   while numTries < MAX_TRIES and !centroidsEqual(centroids, prevClusters)
@@ -24,18 +23,17 @@ module.exports = (vectors, numClusters) ->
 
 step = (vectors, centroids, clusters) ->
   for vector in vectors
-    cluster = clusters[closestIdx(centroids, vector)]
+    cluster = clusters[closestClusterIdx(centroids, vector)]
     cluster.add vector
 
   (cluster.centroid() for cluster, i in clusters when cluster.count() > 0)
 
-closestIdx = (centroids, vector) ->
-  closest   = 0
-  smallestDist = null
+closestClusterIdx = (centroids, vector) ->
+  closest = 0
+  smallestDist = 195076 # largest possible square distance is 195075 (255^2 * 3)
 
   for c, idx in centroids
     dist = distance(c, vector)
-    smallestDist ?= dist
     if dist < smallestDist
       closest = idx
       smallestDist = dist
@@ -62,7 +60,6 @@ pickEvenly = (n, dimensions, range) ->
 
   vectors
 
-
 centroidsEqual = (old, clusters) ->
   return false unless clusters
   for centroid, i in old
@@ -79,5 +76,5 @@ vectorsEqual = (a, b) ->
 
 bail = (vectors, numClusters) ->
   clusters = (Cluster() for i in [0...numClusters])
-  cluster.add(vectors[i]) for cluster, i in clusters
+  cluster.add(vectors.at(i)) for cluster, i in clusters
   clusters
