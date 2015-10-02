@@ -1,3 +1,5 @@
+var Promise = require('promise');
+
 module.exports = function imageData(srcOrImg, maxPixels) {
   var image = new Image();
   var promise = new Promise(function(accept, reject) {
