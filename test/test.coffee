@@ -37,6 +37,6 @@ showTestImage = (i) ->
     document.body.appendChild(img)
     document.body.appendChild makePaletteEl(palette)
 
-showTestImage(i) for i in [1..3]
-
+#showTestImage(i) for i in [1..3]
+showTestImage(1)
 
