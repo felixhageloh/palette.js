@@ -18,7 +18,7 @@ function toData(image, maxPixels) {
 
   canvas.width = size.width;
   canvas.height = size.height;
-  ctx.drawImage(image, 0, 0);
+  ctx.drawImage(image, 0, 0, size.width, size.height);
 
   return ctx.getImageData(0, 0, size.width, size.height)
     .data;
