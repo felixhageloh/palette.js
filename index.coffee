@@ -1,4 +1,4 @@
-MAX_TRIES = 100
+MAX_TRIES = 20
 MAX_PIXELS = 10000
 
 ImageData = require './src/image-data'
