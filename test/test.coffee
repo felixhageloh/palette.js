@@ -1,11 +1,22 @@
 ImageData = require "../src/image-data"
 Palette = require "../"
 
-makePaletteEl = (palette) ->
+makePaletteEl = (image, palette) ->
+  image.style.border = '1px solid #ccc'
+  image.style.maxWidth = '280px'
+
   container = document.createElement 'div'
+  container.style.display = 'inline-block'
+  container.style.textAlign = 'center'
+  container.style.padding = '0 16px'
 
   colorContainer = document.createElement 'div'
+  colorContainer.style.textAlign = 'left'
+  colorContainer.style.border = '1px solid #ddd'
+  colorContainer.style.fontSize = '0'
+
   countContainer = document.createElement 'div'
+  countContainer.style.textAlign = 'left'
   for c, i in palette.colors
     c ?= []
     colorEl = document.createElement 'div'
@@ -16,6 +27,7 @@ makePaletteEl = (palette) ->
 
     countEl = document.createElement 'div'
     countEl.style.display = 'inline-block'
+
     countEl.style.width   = 40 +'px'
     countEl.style.height  = 20 +'px'
     countEl.style.fontSize = 11+'px'
@@ -25,18 +37,18 @@ makePaletteEl = (palette) ->
     colorContainer.appendChild(colorEl)
     countContainer.appendChild(countEl)
 
+  container.appendChild(image)
   container.appendChild(colorContainer)
   container.appendChild(countContainer)
   container
 
 showTestImage = (i) ->
-  Palette "#{i}.jpg", 5, (palette) ->
+  Palette "#{i}.jpg", 7, (palette) ->
     img = new Image()
     img.src = "#{i}.jpg"
     img.style.marginTop = 20+'px'
-    document.body.appendChild(img)
-    document.body.appendChild makePaletteEl(palette)
 
-#showTestImage(i) for i in [1..3]
-showTestImage(1)
+    document.body.appendChild makePaletteEl(img, palette)
+
+showTestImage(i) for i in [1..9]
 
