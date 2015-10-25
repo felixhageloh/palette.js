@@ -24,7 +24,7 @@ step = (vectors, centroids, clusters) ->
     cluster = clusters[closestClusterIdx(centroids, vector)]
     cluster.add vector
 
-  (cluster.centroid() for cluster, i in clusters when cluster.count() > 0)
+  (cluster.mean() for cluster, i in clusters when cluster.count() > 0)
 
 closestClusterIdx = (centroids, vector) ->
   closest = 0

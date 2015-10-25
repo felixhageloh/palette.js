@@ -17,9 +17,9 @@ module.exports = ->
 
   api.centroid = ->
     return centroid if centroid? and lastNumVectors == vectors.length
-    return if (count = vectors.length) == 0
-    mean = (Math.round(total/count) for total in totals)
+    mean = api.mean()
 
+    return unless mean
     centroid = vectors[0]
     lastNumVectors = vectors.length
     smallestDist = distance(mean, centroid)
@@ -30,6 +30,10 @@ module.exports = ->
       smallestDist = dist
 
     centroid
+
+  api.mean = ->
+    return if (count = vectors.length) == 0
+    (Math.round(total/count) for total in totals)
 
   api.clear = ->
     totals = null
