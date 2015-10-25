@@ -50,5 +50,5 @@ showTestImage = (i) ->
 
     document.body.appendChild makePaletteEl(img, palette)
 
-showTestImage(i) for i in [1..9]
+showTestImage(i) for i in [1..6]
 
