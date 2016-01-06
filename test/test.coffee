@@ -1,5 +1,5 @@
 ImageData = require "../src/image-data"
-Palette = require "../"
+Palette = require "../index.coffee"
 
 makePaletteEl = (image, palette) ->
   image.style.border = '1px solid #ccc'

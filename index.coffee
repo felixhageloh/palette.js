@@ -3,7 +3,7 @@ MAX_PIXELS = 10000
 
 ImageData = require './src/image-data'
 toRgbVectors = require './src/to-rgb-vectors'
-findClusters = require './src/find-clusters'
+findClusters = require './src/find-clusters.coffee'
 
 module.exports = (srcOrImage, numColors, callback) ->
   ImageData(srcOrImage, MAX_PIXELS)

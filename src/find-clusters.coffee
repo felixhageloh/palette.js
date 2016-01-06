@@ -1,4 +1,4 @@
-Cluster  = require './cluster'
+Cluster  = require './cluster.coffee'
 distance = require './square-distance'
 
 # Finds numClusters clusters in vectors (based on geometric distance)
