@@ -1,31 +1,31 @@
-ImageData = require "../src/image-data"
-Palette = require "../index.coffee"
+var ImageData = require("../src/image-data");
+var Palette = require("../index");
 
-makePaletteEl = (image, palette) ->
+function makePaletteEl(image, palette) {
   image.style.border = '1px solid #ccc'
   image.style.maxWidth = '280px'
 
-  container = document.createElement 'div'
+  var container = document.createElement('div')
   container.style.display = 'inline-block'
   container.style.textAlign = 'center'
   container.style.padding = '0 16px'
 
-  colorContainer = document.createElement 'div'
+  var colorContainer = document.createElement('div')
   colorContainer.style.textAlign = 'left'
   colorContainer.style.border = '1px solid #ddd'
   colorContainer.style.fontSize = '0'
 
-  countContainer = document.createElement 'div'
+  var countContainer = document.createElement('div')
   countContainer.style.textAlign = 'left'
-  for c, i in palette.colors
-    c ?= []
-    colorEl = document.createElement 'div'
+  for (var i = 0; i < palette.colors.length; i++) {
+    var c = palette.colors[i] || [];
+    var colorEl = document.createElement('div')
     colorEl.style.display = 'inline-block'
     colorEl.style.width   = 40 +'px'
     colorEl.style.height  = 20 +'px'
-    colorEl.style.backgroundColor = "rgb(#{c.join(',')})"
+    colorEl.style.backgroundColor = "rgb(" + c.join(',') + ")"
 
-    countEl = document.createElement 'div'
+    var countEl = document.createElement('div')
     countEl.style.display = 'inline-block'
 
     countEl.style.width   = 40 +'px'
@@ -36,19 +36,24 @@ makePaletteEl = (image, palette) ->
 
     colorContainer.appendChild(colorEl)
     countContainer.appendChild(countEl)
+  }
 
   container.appendChild(image)
   container.appendChild(colorContainer)
   container.appendChild(countContainer)
-  container
 
-showTestImage = (i) ->
-  Palette "#{i}.jpg", 7, (palette) ->
-    img = new Image()
-    img.src = "#{i}.jpg"
+  return container
+}
+
+function showTestImage(i) {
+  Palette(i + ".jpg", 7, function(palette) {
+    var img = new Image()
+    img.src = i + ".jpg"
     img.style.marginTop = 20+'px'
 
-    document.body.appendChild makePaletteEl(img, palette)
+    document.body.appendChild(makePaletteEl(img, palette));
+  });
+}
 
-showTestImage(i) for i in [1..6]
+for (var i = 1; i < 7; i++) showTestImage(i);
 
