@@ -1,9 +1,9 @@
-var distance = require('./square-distance');
+var distance = require("./square-distance");
 
 module.exports = function Cluster() {
   var api = {};
 
-  var totals = [0, 0, 0];
+  var totals = [0, 0, 0, 0];
   var vectors = [];
   var centroid;
   var lastNumVectors;
@@ -13,11 +13,11 @@ module.exports = function Cluster() {
       totals[i] = totals[i] + vector[i];
     }
     vectors.push(vector);
-  }
+  };
 
   api.count = function count() {
     return vectors.length;
-  }
+  };
 
   api.centroid = function calcCentroid() {
     if (!!centroid && lastNumVectors === vectors.length) return centroid;
@@ -37,20 +37,22 @@ module.exports = function Cluster() {
     }
 
     return centroid;
-  }
+  };
 
   api.mean = function calcMean() {
     var count = api.count();
     if (count == 0) return;
-    return totals.map(function(total) { return Math.round(total/count); });
-  }
+    return totals.map(function (total) {
+      return Math.round(total / count);
+    });
+  };
 
   api.clear = function clear() {
-    totals = null
-    vectors.length = 0
-    centroid = null
-    lastNumVectors = null
-  }
+    totals = null;
+    vectors.length = 0;
+    centroid = null;
+    lastNumVectors = null;
+  };
 
   return api;
-}
+};

@@ -1,5 +1,5 @@
-var Cluster = require('./cluster');
-var distance = require('./square-distance');
+var Cluster = require("./cluster");
+var distance = require("./square-distance");
 
 // Finds numClusters clusters in vectors (based on geometric distance)
 // Somewhat k-means like, I guess
@@ -19,7 +19,7 @@ module.exports = function findCluster(vectors, numClusters, maxTries) {
     numTries++;
   }
   return clusters;
-}
+};
 
 function step(vectors, centroids, clusters) {
   var numVectors = vectors.length;
@@ -33,7 +33,7 @@ function step(vectors, centroids, clusters) {
     if (cluster.count() > 0) cluster.mean();
   }
 
-  return clusters.reduce(function(newCentroids, cluster) {
+  return clusters.reduce(function (newCentroids, cluster) {
     if (cluster.count() > 0) newCentroids.push(cluster.mean());
     return newCentroids;
   }, []);
@@ -41,15 +41,15 @@ function step(vectors, centroids, clusters) {
 
 function closestClusterIdx(centroids, vector) {
   var closest = 0;
-  // largest possible square distance is 195075 (255^2 * 3)
-  var smallestDist = 195076;
+  // largest possible square distance is 195075 (255^2 * 4)
+  var smallestDist = 260101;
 
   var numCentroids = centroids.length;
-  for(var i = 0; i < numCentroids; i++) {
+  for (var i = 0; i < numCentroids; i++) {
     var dist = distance(centroids[i], vector);
     if (dist < smallestDist) {
-      closest = i
-      smallestDist = dist
+      closest = i;
+      smallestDist = dist;
     }
   }
 
@@ -57,13 +57,13 @@ function closestClusterIdx(centroids, vector) {
 }
 
 function pickRandom(n, samples) {
-  var picks = []
+  var picks = [];
   var remainingSamples = samples.slice();
 
   for (var i = 0; i < n; i++) {
     var idx = Math.floor(Math.random() * remainingSamples.length);
     picks.push(remainingSamples[idx]);
-    remainingSamples.splice(idx, 1)
+    remainingSamples.splice(idx, 1);
   }
 
   return picks;
