@@ -6,12 +6,11 @@ var ImageData = require('./src/image-data');
 var toRgbVectors = require('./src/to-rgb-vectors');
 var findClusters = require('./src/find-clusters');
 
-module.exports = function palette(srcOrImage, numColors, callback) {
+module.exports = function Palette(srcOrImage, numColors, callback) {
   return ImageData(srcOrImage, MAX_PIXELS)
     .then(function(data) {
       var vectors = toRgbVectors(data)
       var clusters = findClusters(vectors, numColors, MAX_TRIES);
-
       clusters = clusters.sort(function(a,b) {
         return b.count() - a.count();
       });
@@ -20,7 +19,8 @@ module.exports = function palette(srcOrImage, numColors, callback) {
         colors: clusters.map(function(cluster) { return cluster.centroid(); }),
         counts: clusters.map(function(cluster) { return cluster.count(); }),
       });
-    });
+    })
+    .catch(function (err) { console.error(err) })
 }
 
 
@@ -732,12 +732,12 @@ rawAsap.makeRequestCallFromTimer = makeRequestCallFromTimer;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],11:[function(require,module,exports){
-var distance = require('./square-distance');
+var distance = require("./square-distance");
 
 module.exports = function Cluster() {
   var api = {};
 
-  var totals = [0, 0, 0];
+  var totals = [0, 0, 0, 0];
   var vectors = [];
   var centroid;
   var lastNumVectors;
@@ -747,17 +747,17 @@ module.exports = function Cluster() {
       totals[i] = totals[i] + vector[i];
     }
     vectors.push(vector);
-  }
+  };
 
   api.count = function count() {
     return vectors.length;
-  }
+  };
 
   api.centroid = function calcCentroid() {
     if (!!centroid && lastNumVectors === vectors.length) return centroid;
     var mean = api.mean();
 
-    if (!mean) return;
+    if (!mean) return centroid;
     centroid = vectors[0];
     lastNumVectors = vectors.length;
     smallestDist = distance(mean, centroid);
@@ -771,27 +771,29 @@ module.exports = function Cluster() {
     }
 
     return centroid;
-  }
+  };
 
   api.mean = function calcMean() {
     var count = api.count();
     if (count == 0) return;
-    return totals.map(function(total) { return Math.round(total/count); });
-  }
+    return totals.map(function (total) {
+      return Math.round(total / count);
+    });
+  };
 
   api.clear = function clear() {
-    totals = null
-    vectors.length = 0
-    centroid = null
-    lastNumVectors = null
-  }
+    totals = null;
+    vectors.length = 0;
+    centroid = null;
+    lastNumVectors = null;
+  };
 
   return api;
-}
+};
 
 },{"./square-distance":14}],12:[function(require,module,exports){
-var Cluster = require('./cluster');
-var distance = require('./square-distance');
+var Cluster = require("./cluster");
+var distance = require("./square-distance");
 
 // Finds numClusters clusters in vectors (based on geometric distance)
 // Somewhat k-means like, I guess
@@ -810,9 +812,8 @@ module.exports = function findCluster(vectors, numClusters, maxTries) {
     centroids = step(vectors, centroids, clusters);
     numTries++;
   }
-
   return clusters;
-}
+};
 
 function step(vectors, centroids, clusters) {
   var numVectors = vectors.length;
@@ -825,19 +826,24 @@ function step(vectors, centroids, clusters) {
     var cluster = clusters[j];
     if (cluster.count() > 0) cluster.mean();
   }
+
+  return clusters.reduce(function (newCentroids, cluster) {
+    if (cluster.count() > 0) newCentroids.push(cluster.mean());
+    return newCentroids;
+  }, []);
 }
 
 function closestClusterIdx(centroids, vector) {
   var closest = 0;
-  // largest possible square distance is 195075 (255^2 * 3)
-  var smallestDist = 195076;
+  // largest possible square distance is 195075 (255^2 * 4)
+  var smallestDist = 260101;
 
   var numCentroids = centroids.length;
-  for(var i = 0; i < numCentroids; i++) {
+  for (var i = 0; i < numCentroids; i++) {
     var dist = distance(centroids[i], vector);
     if (dist < smallestDist) {
-      closest = idx
-      smallestDist = dist
+      closest = i;
+      smallestDist = dist;
     }
   }
 
@@ -845,13 +851,13 @@ function closestClusterIdx(centroids, vector) {
 }
 
 function pickRandom(n, samples) {
-  var picks = []
+  var picks = [];
   var remainingSamples = samples.slice();
 
   for (var i = 0; i < n; i++) {
     var idx = Math.floor(Math.random() * remainingSamples.length);
     picks.push(remainingSamples[idx]);
-    remainingSamples.splice(idx, 1)
+    remainingSamples.splice(idx, 1);
   }
 
   return picks;
@@ -896,30 +902,32 @@ function bail(vectors, numClusters) {
 }
 
 },{"./cluster":11,"./square-distance":14}],13:[function(require,module,exports){
-var Promise = require('promise');
+var Promise = require("promise");
 
 module.exports = function imageData(srcOrImg, maxPixels) {
   var image = new Image();
-  var promise = new Promise(function(accept, reject) {
-    image.onload = function() { accept(toData(image, maxPixels)); };
+  var promise = new Promise(function (accept, reject) {
+    image.onload = function () {
+      accept(toData(image, maxPixels));
+    };
+    image.onerror = reject;
   });
 
-  image.src = srcOrImg.src ? srcOrImg.src : (srcOrImg || '');
+  image.src = srcOrImg.src ? srcOrImg.src : srcOrImg || "";
 
   return promise;
 };
 
 function toData(image, maxPixels) {
   var size = clampImageSize(image, maxPixels);
-  var canvas = document.createElement('canvas');
-  var ctx = canvas.getContext('2d');
+  var canvas = document.createElement("canvas");
+  var ctx = canvas.getContext("2d");
 
   canvas.width = size.width;
   canvas.height = size.height;
   ctx.drawImage(image, 0, 0, size.width, size.height);
 
-  return ctx.getImageData(0, 0, size.width, size.height)
-    .data;
+  return ctx.getImageData(0, 0, size.width, size.height).data;
 }
 
 function clampImageSize(image, maxPixels) {
@@ -929,7 +937,7 @@ function clampImageSize(image, maxPixels) {
 
   return {
     width: Math.round(width),
-    height: Math.round(height)
+    height: Math.round(height),
   };
 }
 
@@ -954,7 +962,7 @@ module.exports = function toRgbArray(imageData) {
   for (var i = 0; i < numPixels; i++) {
     offset = i * 4;
     rgbVectors.push(
-      Array.prototype.slice.apply(imageData, [offset, offset+3])
+      Array.prototype.slice.apply(imageData, [offset, offset + 4])
     );
   }
 
