@@ -1,4 +1,4 @@
-module.exports = function toRgbArray(imageData) {
+module.exports = function toRgbaVectors(imageData) {
   var rgbVectors = [];
   var numPixels = imageData.length / 4;
   var offset;

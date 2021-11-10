@@ -6,7 +6,7 @@
   "scripts": {
     "start": "watchify -d ./test/test.js -o public/test.js -d -v & nws -d public",
     "build": "browserify -s palette index.js > palette.js",
-    "test": "browserify -t brfs test/to-rgb-vectors-test.js | browser-run"
+    "test": "browserify -t brfs test/toRgbaVectors-test.js | browser-run"
   },
   "repository": {
     "type": "git",

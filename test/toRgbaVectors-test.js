@@ -1,6 +1,6 @@
 var fs = require("fs");
 var test = require("tape");
-var toRgbVectors = require("../src/to-rgb-vectors");
+var toRgbVectors = require("../src/toRgbaVectors");
 var testBitmap = fs.readFileSync(__dirname + "/files/test.png");
 
 test("rgb-iterator", function (t) {
@@ -12,7 +12,7 @@ test("rgb-iterator", function (t) {
 
     console.log(vectors);
 
-    t.equal(vectors.length, 4, "there are 4 pixels");
+    t.equal(vectors.length, 4, "there are 3 pixels and one alpha channel");
     t.looseEqual(vectors[0], [255, 0, 0, 255], "pixel 1 is red");
     t.looseEqual(vectors[1], [0, 255, 0, 255], "pixel 2 is green");
     t.looseEqual(vectors[2], [0, 0, 255, 255], "pixel 3 is blue");

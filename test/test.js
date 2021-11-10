@@ -25,7 +25,7 @@ function makePaletteEl(image, palette) {
     colorEl.style.width = 40 + "px";
     colorEl.style.height = 20 + "px";
     colorEl.style.backgroundColor =
-      "rgba(" + c.slice(0, 3).join(",") + "," + c[3] / 255 + ")";
+      "rgba(" + c.slice(0, 3).join(",") + "," + c[3] + ")";
 
     var countEl = document.createElement("div");
     countEl.style.display = "inline-block";
